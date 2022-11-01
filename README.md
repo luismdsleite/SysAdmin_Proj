@@ -30,7 +30,7 @@ This project consists of an directory information system based on LDAP for authe
     Type: e2-micro
     Location: europe-west1-d
     OS: Fedora-36
-    External IP: 35.240.73.58
+    External IP: 34.77.37.203
 
 ## Server - OpenMediaVault
 
@@ -44,15 +44,18 @@ This project consists of an directory information system based on LDAP for authe
     Type: e2-micro
     Location: europe-west1-b
     OS: CentOS-7
-    External IP: 34.77.37.203
+    External IP: 35.240.73.58
 
 ## Windows 10
 
 # Fedora - Workstation
 
 # Server - OpenMediaVault
+
 ## Installing OpenMediaVault on debian 11
-**Note: Remember to permit HTTP/HTTPS traffic** 
+
+**Note: Remember to permit HTTP/HTTPS traffic (WebUI must run on port 80 or 443 or it will be blocked by the firewall)**
+
 [Instruction Used](https://docs.openmediavault.org/en/6.x/installation/on_debian.html)
 
 # Server - OpenLDAP
