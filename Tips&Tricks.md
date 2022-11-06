@@ -7,12 +7,13 @@
 - [Fuser](#fuser)
 - [LSOF](#lsof)
 - [Access Control Lists in linux (setfacl, getfacl)](#access-control-lists-in-linux-setfacl-getfacl)
+- [Disks, Partitions related commands.](#disks-partitions-related-commands)
 
 # Systemd
 
 **A System and service manager, an init system used to bootstrap user space and manage user processes.**
 
-Systemd is a system that is designed specifically for the Linux kernel. It replaces the sysvinit process to become the first process with PID = 1, which gets executed in user space during the Linux start-up process.  
+Systemd is a system that is designed specifically for the Linux kernel. It replaces the sysvinit process to become the first process with PID = 1, which gets executed in user space during the Linux start-up process.
 
 Managing services with systemd:\
 Below is the list of some useful systemd utilities along with a brief description of what they do:
@@ -26,15 +27,17 @@ Below is the list of some useful systemd utilities along with a brief descriptio
 **systemadm**: It is a Front-end for systemctl command.\
 
 # LDAP
+
 [Simple Explanation of what is OpenLDAP, LDAP, slapd](https://www.youtube.com/watch?v=l8BwMlPRMF8)
 
 LDAP = X.500 + TCP/IP
 
-## Attributes 
+## Attributes
+
 - CN = Common Name
 - OU = Organizational Unit
 - DC = Domain Component
-- DN = Distinguished Names 
+- DN = Distinguished Names
 - C = country
 
 <figure>
@@ -43,15 +46,19 @@ LDAP = X.500 + TCP/IP
 </figure>
 
 ## Object Classes
+
 Set of attributes
+
 - Person = CN + SN
 - Country = C
-Note: Optional attributes are also possible in object classes
+  Note: Optional attributes are also possible in object classes
 
-## Schemas  
+## Schemas
+
 Plugins (Attributes + Object Classes)
+
 - PosixAccount composed by: VID, Shell, home, GID
-Note: PosixAccount = Object class Used in /etc/passwd composed by attributes
+  Note: PosixAccount = Object class Used in /etc/passwd composed by attributes
 
 The slapd configuration is stored as a special LDAP directory with a predefined schema and DIT. There are specific objectClasses used to carry global configuration options, schema definitions, backend and database definitions, and assorted other items
 
@@ -67,28 +74,50 @@ The slapd configuration is stored as a special LDAP directory with a predefined 
 
 `olcDatabase={1}monitor.ldif`: `olc` = OpenLDAPConfig, `Database={1}` = the matching database, `monitor` = who has access to the DB.
 
-`olcDatabase={1}hdb.ldif`: `hdb` = The database where all the data is stored.  
+`olcDatabase={1}hdb.ldif`: `hdb` = The database where all the data is stored.
 
 # SSSD
-The System Security Services Daemon (SSSD) is a system service to access remote directories and authentication mechanisms. It connects a local system (an SSSD client) to an external back-end system (a provider). 
 
-# Fuser 
-Tells which processes are using a file 
+The System Security Services Daemon (SSSD) is a system service to access remote directories and authentication mechanisms. It connects a local system (an SSSD client) to an external back-end system (a provider).
+
+# Fuser
+
+Tells which processes are using a file
+
 ```
 fuser ./
-  2078rce 2083rce 2105rce ... 
+  2078rce 2083rce 2105rce ...
 ```
+
 `r`: root
 `c`: current directory
 `e`: executing
 
 # LSOF
+
 List of all Open Files. Useful for a lot of cases such as: searching for processes still using old libraries, checking how many processes are using a file, searching ports that are listening to a specific port or ip (via -i option).
 
 # Access Control Lists in linux (setfacl, getfacl)
+
 Allow a more granular control of resources. Allows you to grant to permissions to people/groups that are not the file owner.
 
 - If a specific file permission produce a `+` when executing `ls -l`, then that file has a ACL associated with it.
 - Add a User ACL: `setfacl -m u:{userName}:[r][w][x] {file}`
 - Add a Group ACL: `setfacl -m g:{groupName}:[r][w][x] {file}`
-- Check a ACL: `getfacl {file}` 
+- Check a ACL: `getfacl {file}`
+
+# Disks, Partitions related commands.
+
+**Partition**: logical storage unit, a disk can be divided into 1 of more isolated partitions.
+**Mounting a partition**: Mounting means to make a disk, partition or data source accessible to the system. Example: `mount {file} {dir_to_mount_to}`.
+
+**`df`**: Report file system disk space usage e.g: `df -hT`.
+
+**`lsblk`**: List Block Devices
+
+**`fdisk`**: Manipulate Partitions, list partitions: `fdisk -l`
+
+**`losetup`**: Set up and control loop devices. A **Loop Device** is a block device that maps data blocks not to a physical device but to a regular file.
+
+**`losetup -a`**: Find out where a loopback device maps to.
+
