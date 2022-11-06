@@ -52,9 +52,112 @@ This project consists of an directory information system based on LDAP for authe
 
 # Fedora - Workstation
 
-## Remote Desktop (GUI)
+**IMPORTANT NOTE:**
+- To turn on the virtual display device, select the **Enable display device** checkbox from the **Machine configuration > Display device** settings
 
-**Note: To use a GUI it is required to activate the Display Device on the Google Cloud options**
+------------
+### Installing desktop environment 
+
+    dnf group install "LXDE Desktop"
+
+    systemctl set-default graphical.target 
+
+## Creating new user for the remote desktop
+------------
+
+    useradd admin-gui
+
+    passwd admin-gui
+
+    usermod -a -G google-sudoers admin-gui
+
+    usermod -a -G adm admin-gui
+
+    usermod -a -G video admin-gui
+
+    usermod -aG wheel admin-gui
+
+
+## Installing Xrdp Server (Remote Desktop)
+```
+dnf -y install xrdp
+
+firewall-cmd --add-port=3389/tcp 
+
+firewall-cmd --runtime-to-permanent 
+
+systemctl enable --now xrdp
+```
+**Note: If your on linux you can use Remmina to access the workstation via RDP**
+
+## OpenLDAP access
+```
+dnf -y install openldap-clients sssd sssd-ldap oddjob-mkhomedir 
+
+vi /etc/openldap/ldap.conf
+    TLS_REQCERT     allow
+
+ldapsearch  -x -L -W -H ldaps://server_ip/ -D "cn=Manager,dc=ads,dc=dcc" -b "dc=ads,dc=dcc" 
+
+firewall-cmd --add-service=ldap --permanent 
+
+firewall-cmd --reload 
+```
+
+## Setup Authentication
+1. Set the SSSD service as the authentication provider
+    ```
+    # in root home dir - using root shell
+    authselect --trace select --force sssd  with-mkhomedir > change-authselect-with-sssd.log  2>&1
+    ```
+    The System Security Services Daemon (SSSD) is a system service to access remote directories and authentication mechanisms. It connects a local system (an SSSD client) to an external back-end system (a provider). 
+2. Configure the SSSD service to access LDAP for authentication
+
+    ```
+    vi /etc/sssd/sssd.conf
+        [domain/default]
+        id_provider = ldap
+        auth_provider = ldap
+        chpass_provider = ldap
+        ldap_uri = ldaps://ip_servidor/
+        ldap_search_base = dc=ads,dc=dcc
+        ldap_id_use_start_tls = True
+        ldap_tls_cacertdir = /etc/openldap/certs
+        cache_credentials = True
+        ldap_tls_reqcert = allow
+
+        [sssd]
+        services = nss, pam
+        domains = default
+
+        [nss]
+        homedir_substring = /home 
+    ```
+    Change permission of the sssd.conf so that only the owner can read of write the file.
+    ```
+    chmod 600 /etc/sssd/sssd.conf
+    ```
+    Restart the service to apply the configuration changes,
+    ```
+    systemctl restart sssd
+
+    systemctl enable oddjobd
+
+    systemctl start oddjobd
+    ```
+    The oddjobd daemon provides the com.redhat.oddjob service on the system-wide message bus. Each facility which oddjobd provides is provided as a separate D-Bus method.
+3. Change the password of the user created
+    ```
+    ldappasswd  -S -x -W -H ldaps://10.132.0.12 -D "uid=joao,ou=People,dc=ads,dc=dcc" "uid=joao,ou=People,dc=ads,dc=dcc"
+    ```
+4. Create the dir of the authenticated user
+    ```
+    su - joao
+    ```
+## Setup auto mount
+```
+Setup auto mount
+``` 
 
 # Server - OpenMediaVault
 
@@ -95,11 +198,11 @@ This project consists of an directory information system based on LDAP for authe
 
 6. Configure OpenLDAP Server
     ```
-    [root@server-openldap ~]# vi ldaprootpasswd.ldif
-    dn: olcDatabase={0}config,cn=config
-    changetype: modify
-    add: olcRootPW
-    olcRootPW: {SSHA}PASSWORD_CREATED
+    vi ldaprootpasswd.ldif
+        dn: olcDatabase={0}config,cn=config
+        changetype: modify
+        add: olcRootPW
+        olcRootPW: {SSHA}PASSWORD_CREATED
     ```
 
     - **oldcDatabase={0}** : database instance which can be found in /etc/openldap/slapd.d/cn=config.
