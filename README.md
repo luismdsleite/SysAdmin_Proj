@@ -20,11 +20,19 @@ This project consists of an directory information system based on LDAP for authe
   - [Server - OpenLDAP](#server---openldap)
   - [Windows 10](#windows-10)
 - [Fedora - Workstation](#fedora---workstation-1)
-  - [Remote Desktop (GUI)](#remote-desktop-gui)
+    - [Installing desktop environment](#installing-desktop-environment)
+  - [## Creating new user for the remote desktop](#-creating-new-user-for-the-remote-desktop)
+  - [Installing Xrdp Server (Remote Desktop)](#installing-xrdp-server-remote-desktop)
+  - [OpenLDAP access](#openldap-access)
+  - [Setup Authentication](#setup-authentication)
+  - [Setup auto mount](#setup-auto-mount)
 - [Server - OpenMediaVault](#server---openmediavault-1)
   - [Installing OpenMediaVault on debian 11](#installing-openmediavault-on-debian-11)
 - [Server - OpenLDAP](#server---openldap-1)
   - [Install OpenLDAP on CentOS 7](#install-openldap-on-centos-7)
+  - [Add user and group](#add-user-and-group)
+  - [OpenSSL (for Authentication)](#openssl-for-authentication)
+  - [phpLDAPadmin Install (Optional)](#phpldapadmin-install-optional)
 
 # Virtual machines specs
 ## Fedora - Workstation
@@ -312,3 +320,110 @@ Setup auto mount
     firewall-cmd --add-service=ldap --permanent 
     firewall-cmd --reload 
     ```
+
+## Add user and group
+
+```
+vi adduser-joao.ldif
+    dn: uid=joao,ou=People,dc=ads,dc=dcc
+    objectClass: top
+    objectClass: account
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    cn: joao
+    uid: joao
+    uidNumber: 9999
+    gidNumber: 100
+    homeDirectory: /rhome/joao
+    loginShell: /bin/bash
+    # Comment to add in LDAP
+    gecos: Joao [LDAP]
+    # Password policies
+    shadowMax: 9999
+    shadowWarning: 7
+    shadowLastChange: 17838
+    userPassword: {crypt}x
+```
+```
+ldapadd -x -W -D "cn=Manager,dc=ads,dc=dcc" -f adduser-joao.ldif 
+```
+- `-x`: Simple Authentication
+- `-W`: Get password from the terminal (and not as an argument)
+- `-D`: Use Distinguished name (in this case root user)
+- `-f`: Read from file
+
+Add password
+```
+ldappasswd -S -W -D "cn=Manager,dc=ads,dc=dcc" "uid=joao,ou=People,dc=ads,dc=dcc"
+```
+- `-S`: Request new password
+Remove User (Optional)
+```
+ldapdelete -x -D cn=Manager,dc=ads,dc=dcc -W uid=joao,ou=People,dc=ads,dc=dcc
+```
+Add group
+```
+vi adduser-group.ldif
+    dn: cn=joao,ou=People,dc=ads,dc=dcc
+    gidNumber: 5001
+    objectClass: top
+    objectClass: posixGroup
+    cn: joao
+ldapadd -x -D cn=Manager,dc=ads,dc=dcc -W -f adduser-group.ldif
+```
+
+## OpenSSL (for Authentication)
+```
+sudo yum install openssl
+
+cd /etc/openldap/certs
+
+openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out server.crt -keyout server.key 
+
+sudo chown ldap. server.crt
+
+sudo chown ldap. server.key 
+
+sudo ln /etc/pki/tls/certs/ca-bundle.crt ca-bundle.crt
+
+vi openssl.ldif
+    dn: cn=config
+    changetype: modify
+    add: olcTLSCACertificateFile
+    olcTLSCACertificateFile: /etc/openldap/certs/ca-bundle.crt
+    
+    add: olcTLSCertificateFile
+    olcTLSCertificateFile: /etc/openldap/certs/server.crt
+    
+    add: olcTLSCertificateKeyFile
+    olcTLSCertificateKeyFile: /etc/openldap/certs/server.key
+
+ldapmodify -Y EXTERNAL -H ldapi:/// -f openssl.ldif 
+
+vi /etc/sysconfig/slapd 
+    # line 9: add
+    SLAPD_URLS="ldapi:/// ldap:/// ldaps:///" 
+
+systemctl restart slapd 
+```
+
+## phpLDAPadmin Install (Optional)
+
+```
+yum --enablerepo=epel -y install phpldapadmin 
+
+vi /etc/phpldapadmin/config.php
+    # line 397: uncomment, line 398: comment out
+
+    $servers->setValue('login','attr','dn');
+    //
+    $servers->setValue('login','attr','uid'); 
+
+vi /etc/httpd/conf.d/phpldapadmin.conf 
+    # line 12: add access permission
+    Require all granted
+
+systemctl restart httpd 
+```
+
+Enter through http://external-ip-of-openldap/ldapadmin/

@@ -3,6 +3,10 @@
   - [Attributes](#attributes)
   - [Object Classes](#object-classes)
   - [Schemas](#schemas)
+- [SSSD](#sssd)
+- [Fuser](#fuser)
+- [LSOF](#lsof)
+- [Access Control Lists in linux (setfacl, getfacl)](#access-control-lists-in-linux-setfacl-getfacl)
 
 # Systemd
 
@@ -61,6 +65,30 @@ The slapd configuration is stored as a special LDAP directory with a predefined 
 <figcaption align = "center"><b>Slapd config files from the OpenLDAP Server</b></figcaption>
 </figure>
 
-`olcDatabase={1}monitor.ldif`: olc = OpenLDAPConfig, the matching database, and who has access to the DB.
+`olcDatabase={1}monitor.ldif`: `olc` = OpenLDAPConfig, `Database={1}` = the matching database, `monitor` = who has access to the DB.
 
-`olcDatabase={1}hdb.ldif`: hdb = The database where all the data is stored.  
+`olcDatabase={1}hdb.ldif`: `hdb` = The database where all the data is stored.  
+
+# SSSD
+The System Security Services Daemon (SSSD) is a system service to access remote directories and authentication mechanisms. It connects a local system (an SSSD client) to an external back-end system (a provider). 
+
+# Fuser 
+Tells which processes are using a file 
+```
+fuser ./
+  2078rce 2083rce 2105rce ... 
+```
+`r`: root
+`c`: current directory
+`e`: executing
+
+# LSOF
+List of all Open Files. Useful for a lot of cases such as: searching for processes still using old libraries, checking how many processes are using a file, searching ports that are listening to a specific port or ip (via -i option).
+
+# Access Control Lists in linux (setfacl, getfacl)
+Allow a more granular control of resources. Allows you to grant to permissions to people/groups that are not the file owner.
+
+- If a specific file permission produce a `+` when executing `ls -l`, then that file has a ACL associated with it.
+- Add a User ACL: `setfacl -m u:{userName}:[r][w][x] {file}`
+- Add a Group ACL: `setfacl -m g:{groupName}:[r][w][x] {file}`
+- Check a ACL: `getfacl {file}` 
